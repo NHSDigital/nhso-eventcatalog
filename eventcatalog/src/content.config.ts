@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 
 // Enterprise Collections
-import { chatPromptsSchema, customPagesSchema } from './enterprise/collections';
+import { customPagesSchema } from './enterprise/collections';
 
 export const projectDirBase = (() => {
   if (process.platform === 'win32') {
@@ -91,8 +91,6 @@ const changelogs = defineCollection({
     catalog: z
       .object({
         path: z.string(),
-        absoluteFilePath: z.string(),
-        astroContentFilePath: z.string(),
         filePath: z.string(),
         publicPath: z.string(),
         type: z.string(),
@@ -196,7 +194,6 @@ const baseSchema = z.object({
     .object({
       path: z.string(),
       filePath: z.string(),
-      astroContentFilePath: z.string(),
       publicPath: z.string(),
       type: z.string(),
     })
@@ -390,6 +387,7 @@ const services = defineCollection({
       entities: z.array(pointer).optional(),
       writesTo: z.array(pointer).optional(),
       readsFrom: z.array(pointer).optional(),
+      flows: z.array(pointer).optional(),
       detailsPanel: z
         .object({
           domains: detailPanelPropertySchema.optional(),
@@ -468,14 +466,6 @@ const customPages = defineCollection({
   schema: customPagesSchema,
 });
 
-const chatPrompts = defineCollection({
-  loader: glob({
-    pattern: ['chat-prompts/*.(md|mdx)', 'chat-prompts/**/*.@(md|mdx)'],
-    base: projectDirBase,
-  }),
-  schema: chatPromptsSchema,
-});
-
 const domains = defineCollection({
   loader: glob({
     pattern: [
@@ -497,6 +487,7 @@ const domains = defineCollection({
       services: z.array(pointer).optional(),
       domains: z.array(pointer).optional(),
       entities: z.array(pointer).optional(),
+      flows: z.array(pointer).optional(),
       detailsPanel: z
         .object({
           parentDomains: detailPanelPropertySchema.optional(),
@@ -720,7 +711,6 @@ export const collections = {
 
   // EventCatalog Pro Collections
   customPages,
-  chatPrompts,
 
   // EventCatalog Studio Collections
   designs,
