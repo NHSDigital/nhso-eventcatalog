@@ -1,0 +1,25 @@
+---
+import VerticalSideBarLayout from '@layouts/VerticalSideBarLayout.astro';
+import SchemaExplorer from '@components/SchemaExplorer/SchemaExplorer';
+import { isEventCatalogScaleEnabled } from '@utils/feature';
+import { Page } from './_index.data';
+
+export const prerender = Page.prerender;
+export const getStaticPaths = Page.getStaticPaths;
+
+const { schemas } = await Page.getData(Astro);
+
+const apiAccessEnabled = isEventCatalogScaleEnabled();
+---
+
+<VerticalSideBarLayout title="Schema Explorer - EventCatalog" showNestedSideBar={false}>
+  <main class="flex sm:px-8 docs-layout h-[calc(100vh-var(--header-height,0px)-64px)]">
+    <div class="flex docs-layout w-full h-full">
+      <div class="w-full lg:mr-2 pr-8 py-6 flex flex-col h-full">
+        <div class="w-full !max-w-none h-full flex flex-col overflow-hidden">
+          <SchemaExplorer client:load schemas={schemas as any} apiAccessEnabled={apiAccessEnabled} />
+        </div>
+      </div>
+    </div>
+  </main>
+</VerticalSideBarLayout>

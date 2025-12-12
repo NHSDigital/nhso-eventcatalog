@@ -1,5 +1,125 @@
 # @eventcatalog/core
 
+## 3.0.0-beta.18
+
+### Patch Changes
+
+- 1cc63fa: chore(core): added v3 beta message update
+
+## 3.0.0-beta.17
+
+### Patch Changes
+
+- c0372e5: feat(core): embedding visualizer can be embedded with animations
+
+## 3.0.0-beta.16
+
+### Patch Changes
+
+- 786db2d: chore(core): added icons to spec files in sidebar
+
+## 3.0.0-beta.15
+
+### Patch Changes
+
+- 5b4095e: fix(core): fixed accessibility issues
+
+## 3.0.0-beta.14
+
+### Patch Changes
+
+- 57d1496: chore(core): auth is now more explict opt in
+- c270a98: fix(core): problems with asyncapi loading in the DOM
+
+## 3.0.0-beta.13
+
+### Patch Changes
+
+- 0bc73d3: chore(core): auth is now more explict opt in
+- b8730a9: fix(core): mdx pages are added to teams and users
+
+## 3.0.0-beta.12
+
+### Patch Changes
+
+- 8ed1960: chore(core): removed unused icons on domain grid
+
+## 3.0.0-beta.11
+
+### Patch Changes
+
+- 39fbd2f: feat(core): added support for titles on admonitions
+- dac4dc5: feat(core): updated homepage styles
+
+## 3.0.0-beta.10
+
+### Patch Changes
+
+- c5592f1: fix(core): fixed issue embedding pages on build
+
+## 3.0.0-beta.9
+
+### Patch Changes
+
+- 8db71c9: fix(core): fixed issue embedding pages on build
+
+## 3.0.0-beta.8
+
+### Patch Changes
+
+- 507d14d: fix(core): fixed deployment of example catalogs on releases
+
+## 3.0.0-beta.7
+
+### Patch Changes
+
+- 341279e: fix(core): fixed issue embedding pages on build
+
+## 3.0.0-beta.6
+
+### Patch Changes
+
+- 713c535: chore(core): updated logger for the ecstudio watcher
+- 2a32d7c: chore(core): added empty state to nested sidebar
+
+## 3.0.0-beta.5
+
+### Patch Changes
+
+- 525c809: chore(core): updated react-syntax-highlighter
+
+## 3.0.0-beta.4
+
+### Patch Changes
+
+- c43115d: feat(core): added channel support in nav and search
+
+## 3.0.0-beta.3
+
+### Patch Changes
+
+- 08f0c81: chore(core): updated cli logger
+
+## 3.0.0-beta.2
+
+### Patch Changes
+
+- 6c33b1f: feat(core): visualizer now has presentation mode
+
+## 3.0.0-beta.1
+
+### Patch Changes
+
+- 35f760b: chore(core): updated styles for v3
+- ddc8af5: fix(core): fixed issues with nested sidebar state
+- 8ca5436: chore(core): fixing circular dep in JS
+
+## 3.0.0-beta.0
+
+### Major Changes
+
+- 1d1111d: feat(core): eventcatalog-v3 release
+
 ## 2.65.1
 
 ### Patch Changes

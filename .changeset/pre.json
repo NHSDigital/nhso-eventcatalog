@@ -1,0 +1,34 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@eventcatalog/core": "2.65.1"
+  },
+  "changesets": [
+    "beige-nails-wonder",
+    "clever-turkeys-wink",
+    "curvy-clocks-complain",
+    "cyan-readers-hear",
+    "dirty-sheep-doubt",
+    "early-bottles-reply",
+    "eleven-terms-agree",
+    "five-cougars-smell",
+    "gold-dryers-sleep",
+    "good-humans-love",
+    "happy-gorillas-fold",
+    "khaki-humans-wonder",
+    "late-zoos-scream",
+    "light-humans-mate",
+    "mighty-walls-watch",
+    "plenty-crabs-cheat",
+    "selfish-geese-wave",
+    "shaggy-adults-promise",
+    "sharp-files-occur",
+    "sweet-feet-reflect",
+    "tall-adults-end",
+    "thin-lizards-guess",
+    "thirty-shrimps-argue",
+    "tiny-suns-lie",
+    "warm-scissors-help"
+  ]
+}

@@ -44,6 +44,17 @@ type TableConfiguration = {
   };
 };
 
+type PagesConfiguration = {
+  type: 'item' | 'group';
+  title: string;
+  icon?: string;
+  pages?: string[];
+};
+
+type AuthConfig = {
+  enabled: boolean;
+};
+
 export interface Config {
   title: string;
   tagline: false;
@@ -57,6 +68,7 @@ export interface Config {
   host?: string;
   trailingSlash?: boolean;
   output?: 'server' | 'static';
+  auth?: AuthConfig;
   rss?: {
     enabled: boolean;
     limit: number;
@@ -75,6 +87,9 @@ export interface Config {
   mdxOptimize?: boolean;
   compress?: boolean;
   sidebar?: SideBarConfig[];
+  navigation?: {
+    pages: PagesConfiguration[];
+  };
   docs: {
     sidebar: {
       type?: 'TREE_VIEW' | 'LIST_VIEW';

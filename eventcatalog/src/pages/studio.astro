@@ -1,12 +1,12 @@
 ---
 import VerticalSideBarLayout from '@layouts/VerticalSideBarLayout.astro';
-import { getEvents } from '@utils/events';
-import { getCommands } from '@utils/commands';
+import { getEvents } from '@utils/collections/events';
+import { getCommands } from '@utils/collections/commands';
 import { getServices } from '@utils/collections/services';
 import { BoltIcon, ServerIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
 import { SquareDashedMousePointerIcon, ArrowLeftRightIcon } from 'lucide-react';
 import StudioPageModal from '@components/Studio/StudioPageModal';
-import { getChannels } from '@utils/channels';
+import { getChannels } from '@utils/collections/channels';
 
 const [events, commands, services, channels] = await Promise.all([
   getEvents().catch(() => []),
@@ -44,7 +44,7 @@ const resourcesToShow = [
     <title>EventCatalog Studio</title>
   </head>
   <body>
-    <VerticalSideBarLayout title="EventCatalog Studio">
+    <VerticalSideBarLayout title="EventCatalog Studio" showNestedSideBar={false}>
       <div class="min-h-[calc(100vh-60px)] bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           {/* Hero Section */}

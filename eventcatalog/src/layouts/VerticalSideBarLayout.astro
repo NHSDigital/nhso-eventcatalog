@@ -3,22 +3,19 @@ interface Props {
   title: string;
   sidebar?: boolean;
   description?: string;
+  showNestedSideBar?: boolean;
 }
 
 import {
-  BookOpenText,
-  Workflow,
   TableProperties,
-  House,
-  BookUser,
   BotMessageSquare,
   Users,
+  BookOpen,
   Sparkles,
   Rocket,
   FileText,
   SquareDashedMousePointerIcon,
-  PackageSearch,
-  FileJson,
+  MailSearch,
 } from 'lucide-react';
 import Header from '../components/Header.astro';
 import SEO from '../components/Seo.astro';
@@ -29,25 +26,40 @@ import '@fontsource/inter';
 import '@fontsource/inter/400.css'; // Specify weight
 import '@fontsource/inter/700.css'; // Specify weight
 
-import { getCommands } from '@utils/commands';
+import { ClientRouter } from 'astro:transitions';
+
+import { getCommands } from '@utils/collections/commands';
 import { getDomains } from '@utils/collections/domains';
-import { getEvents } from '@utils/events';
+import { getEvents } from '@utils/collections/events';
 import { getServices } from '@utils/collections/services';
 import { getFlows } from '@utils/collections/flows';
 import { isCollectionVisibleInCatalog } from '@eventcatalog';
 import { buildUrl } from '@utils/url-builder';
-import { getQueries } from '@utils/queries';
+import { getQueries } from '@utils/collections/queries';
 import { hasLandingPageForDocs } from '@utils/pages';
 
-const events = await getEvents({ getAllVersions: false });
-const commands = await getCommands({ getAllVersions: false });
-const queries = await getQueries({ getAllVersions: false });
-const services = await getServices({ getAllVersions: false });
-const domains = await getDomains({ getAllVersions: false });
-const flows = await getFlows({ getAllVersions: false });
+import { isEventCatalogUpgradeEnabled, isEmbedEnabled } from '@utils/feature';
+
+const catalogHasDefaultLandingPageForDocs = await hasLandingPageForDocs();
 const customDocs = await getCollection('customPages');
 
-import { isEventCatalogUpgradeEnabled, isVisualiserEnabled } from '@utils/feature';
+let events: any[] = [];
+let commands: any[] = [];
+let queries: any[] = [];
+let services: any[] = [];
+let domains: any[] = [];
+let flows: any[] = [];
+
+if (!catalogHasDefaultLandingPageForDocs) {
+  [events, commands, queries, services, domains, flows] = await Promise.all([
+    getEvents({ getAllVersions: false, hydrateServices: false }),
+    getCommands({ getAllVersions: false, hydrateServices: false }),
+    getQueries({ getAllVersions: false, hydrateServices: false }),
+    getServices({ getAllVersions: false }),
+    getDomains({ getAllVersions: false }),
+    getFlows({ getAllVersions: false }),
+  ]);
+}
 
 // Try and load any custom styles if they exist
 try {
@@ -55,8 +67,6 @@ try {
 } catch (error) {}
 
 const currentPath = Astro.url.pathname;
-
-const catalogHasDefaultLandingPageForDocs = await hasLandingPageForDocs();
 
 const getDefaultUrl = (route: string, defaultValue: string) => {
   if (route === 'docs/custom') {
@@ -92,47 +102,29 @@ const userSideBarConfiguration = config.sidebar || [];
 const navigationItems = [
   {
     id: '/',
-    label: 'Home',
-    icon: House,
-    href: buildUrl('/'),
-    current: currentPath === '/',
-    sidebar: false,
-    hidden: !!config.landingPage,
-  },
-  {
-    id: '/docs',
-    label: 'Architecture Documentation',
-    icon: BookOpenText,
-    href: catalogHasDefaultLandingPageForDocs ? buildUrl('/docs') : getDefaultUrl('docs', '/docs'),
+    label: 'Documentation',
+    icon: BookOpen,
+    href: buildUrl(config.landingPage || '/'),
     current:
-      (currentPath.includes('/docs') && !currentPath.includes('/docs/custom')) || currentPath.includes('/architecture/docs/'),
-    sidebar: true,
+      currentPath === '/' ||
+      (currentPath.includes('/docs') && !currentPath.includes('/docs/custom')) ||
+      currentPath.includes('/architecture/') ||
+      currentPath.includes('/visualiser') ||
+      (currentPath.includes('/schemas') && !currentPath.includes('/schemas/explorer')),
   },
-  {
-    id: '/visualiser',
-    label: 'Visualiser',
-    icon: Workflow,
-    href: getDefaultUrl('visualiser', '/visualiser'),
-    current: currentPath.includes('/visualiser'),
-    sidebar: true,
-    hidden: !isVisualiserEnabled(),
-  },
-
   {
     id: '/discover',
     label: 'Explore',
     icon: TableProperties,
     href: buildUrl('/discover/events'),
     current: currentPath.includes('/discover/'),
-    sidebar: false,
   },
   {
-    id: '/schemas',
+    id: '/schemas/explorer',
     label: 'Schema Explorer',
-    icon: FileJson,
-    href: buildUrl('/schemas'),
-    current: currentPath.includes('/schemas'),
-    sidebar: false,
+    icon: MailSearch,
+    href: buildUrl('/schemas/explorer'),
+    current: currentPath.includes('/schemas/explorer'),
   },
   {
     id: '/directory',
@@ -140,16 +132,6 @@ const navigationItems = [
     icon: Users,
     href: buildUrl('/directory/users'),
     current: currentPath.includes('/directory'),
-    sidebar: false,
-  },
-  {
-    id: '/architecture',
-    label: 'Architecture',
-    icon: BookUser,
-    href: buildUrl('/architecture/domains'),
-    current: currentPath.includes('/architecture/'),
-    sidebar: false,
-    hidden: true,
   },
 ].filter((item) => {
   const userSideBarOption = userSideBarConfiguration.find((config: { id: string; visible: boolean }) => config.id === item.id);
@@ -163,7 +145,6 @@ const studioNavigationItem = [
     icon: SquareDashedMousePointerIcon,
     href: buildUrl('/studio'),
     current: currentPath.includes('/studio'),
-    sidebar: false,
   },
 ].filter((item) => {
   const userSideBarOption = userSideBarConfiguration.find((config: { id: string; visible: boolean }) => config.id === item.id);
@@ -177,7 +158,6 @@ const premiumFeatures = [
     icon: FileText,
     href: getDefaultUrl('docs/custom', '/docs/custom'),
     current: currentPath.includes('/docs/custom'),
-    sidebar: false,
     isPremium: true,
   },
   {
@@ -194,11 +174,9 @@ const premiumFeatures = [
 });
 
 const currentNavigationItem = [...navigationItems, ...studioNavigationItem, ...premiumFeatures].find((item) => item.current);
-const { title, description } = Astro.props;
+const { title, description, showNestedSideBar = true } = Astro.props;
 
-const showSideBarOnLoad = currentNavigationItem?.sidebar;
-
-const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
+const canPageBeEmbedded = isEmbedEnabled();
 ---
 
 <!doctype html>
@@ -259,34 +237,34 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
     <div class="flex">
       <aside class="flex" id="eventcatalog-vertical-nav">
         <div
-          class="fixed flex flex-col items-center w-16 h-screen py-4 bg-white bg-gradient-to-b from-white to-gray-100 border-r border-gray-200 z-20 shadow-md justify-between"
+          class="fixed flex flex-col items-center w-14 h-screen py-3 bg-white bg-gradient-to-b from-white to-gray-100 border-r border-gray-200 z-20 shadow-md justify-between"
         >
           <nav class="flex flex-col h-[calc(100vh-70px)] justify-between">
             <div class="flex flex-col items-center flex-1 space-y-6">
               {
-                navigationItems
-                  .filter((item) => !item.hidden)
-                  .map((item) => {
-                    return (
-                      <a
-                        id={item.id}
-                        data-role="nav-item"
-                        href={item.href}
-                        class={`p-1.5 inline-block transition-colors duration-200 rounded-lg ${
-                          item.current
-                            ? 'text-white bg-gradient-to-b from-purple-500 to-purple-700'
-                            : 'hover:bg-gradient-to-r hover:from-purple-500 hover:to-purple-700 hover:text-white text-gray-700'
-                        }`}
-                      >
-                        <div class="has-tooltip">
-                          <span class="tooltip rounded shadow-lg p-1 text-xs bg-gradient-to-l from-purple-500 to-purple-700 text-white ml-10">
-                            {item.label}
-                          </span>
-                          <item.icon className="h-6 w-6" />
-                        </div>
-                      </a>
-                    );
-                  })
+                navigationItems.map((item) => {
+                  return (
+                    <a
+                      id={item.id}
+                      data-role="nav-item"
+                      href={item.href}
+                      aria-label={item.label}
+                      class={`p-1.5 inline-block transition-colors duration-200 rounded-lg ${
+                        item.current ? 'text-white bg-gray-900' : 'hover:bg-gray-800 hover:text-white text-gray-700'
+                      }`}
+                    >
+                      <div class="has-tooltip">
+                        <span
+                          class="tooltip rounded shadow-lg p-1 text-xs bg-gray-900 text-white ml-10 whitespace-nowrap"
+                          aria-hidden="true"
+                        >
+                          {item.label}
+                        </span>
+                        <item.icon className="h-6 w-6" aria-hidden="true" />
+                      </div>
+                    </a>
+                  );
+                })
               }
 
               <hr class="w-8 border-t border-gray-200" />
@@ -297,13 +275,17 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
                     id={studioNavigationItem[0].id}
                     data-role="nav-item"
                     href={studioNavigationItem[0].href}
-                    class={`p-1.5 inline-block pt-1 pb-1 mt-0 mb-0 transition-colors duration-200 rounded-lg relative ${studioNavigationItem[0].current ? 'text-white bg-gradient-to-b from-purple-500 to-purple-700' : 'hover:bg-gradient-to-r hover:from-purple-500 hover:to-purple-700 hover:text-white text-gray-700'}`}
+                    aria-label={studioNavigationItem[0].label}
+                    class={`p-1.5 inline-block pt-1 pb-1 mt-0 mb-0 transition-colors duration-200 rounded-lg relative ${studioNavigationItem[0].current ? 'text-white bg-gray-900' : 'hover:bg-gray-800 hover:text-white text-gray-700'}`}
                   >
                     <div class="has-tooltip">
-                      <span class="tooltip rounded shadow-lg p-1 text-xs bg-gradient-to-l from-purple-500 to-purple-700 text-white ml-10">
+                      <span
+                        class="tooltip rounded shadow-lg p-1 text-xs bg-gray-900 text-white ml-10 whitespace-nowrap"
+                        aria-hidden="true"
+                      >
                         {studioNavigationItem[0].label}
                       </span>
-                      <SquareDashedMousePointerIcon className="h-6 w-6" />
+                      <SquareDashedMousePointerIcon className="h-6 w-6" aria-hidden="true" />
                     </div>
                   </a>
                 )
@@ -317,19 +299,24 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
                     id={item.id}
                     data-role="nav-item"
                     href={item.href}
+                    aria-label={item.label}
                     class={`p-1.5 inline-block transition-colors duration-200 rounded-lg mb-8 relative ${
-                      item.current
-                        ? 'text-white bg-gradient-to-b from-purple-500 to-purple-700'
-                        : 'hover:bg-gradient-to-r hover:from-purple-500 hover:to-purple-700 hover:text-white text-gray-700'
+                      item.current ? 'text-white bg-gray-900' : 'hover:bg-gray-800 hover:text-white text-gray-700'
                     }`}
                   >
                     <div class="has-tooltip">
-                      <span class="tooltip rounded shadow-lg p-1 text-xs bg-gradient-to-l from-indigo-500 to-indigo-700 text-white ml-10 flex items-center gap-1">
-                        <Sparkles className="h-3 w-3" /> {item.label}
+                      <span
+                        class="tooltip rounded shadow-lg p-1 text-xs bg-gray-900 text-white ml-10 flex items-center gap-1 whitespace-nowrap"
+                        aria-hidden="true"
+                      >
+                        <Sparkles className="h-3 w-3" aria-hidden="true" /> {item.label}
                       </span>
-                      <item.icon className="h-6 w-6" />
-                      <div class="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full p-0.5 shadow-lg">
-                        <Sparkles className="h-2 w-2 text-white" />
+                      <item.icon className="h-6 w-6" aria-hidden="true" />
+                      <div
+                        class="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full p-0.5 shadow-lg"
+                        aria-hidden="true"
+                      >
+                        <Sparkles className="h-2 w-2 text-white" aria-hidden="true" />
                       </div>
                     </div>
                   </a>
@@ -344,13 +331,17 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
                     id="/pro"
                     data-role="nav-item"
                     href={buildUrl('/plans')}
-                    class={`p-1.5 inline-block transition-colors duration-200 rounded-lg ${currentPath.includes('/pro') ? 'text-white bg-gradient-to-b from-purple-500 to-purple-700' : 'bg-gradient-to-r from-purple-100 to-indigo-100 hover:from-purple-500 hover:to-purple-700 hover:text-white text-purple-700'}`}
+                    aria-label="Upgrade EventCatalog"
+                    class={`p-1.5 inline-block transition-colors duration-200 rounded-lg ${currentPath.includes('/pro') ? 'text-white bg-gray-900' : 'bg-gray-200 hover:bg-gray-800 hover:text-white text-gray-700'}`}
                   >
                     <div class="has-tooltip">
-                      <span class="tooltip rounded shadow-lg p-1 text-xs bg-gradient-to-l from-purple-500 to-purple-700 text-white ml-10">
+                      <span
+                        class="tooltip rounded shadow-lg p-1 text-xs bg-gray-900 text-white ml-10 whitespace-nowrap"
+                        aria-hidden="true"
+                      >
                         Upgrade EventCatalog
                       </span>
-                      <Rocket className="h-6 w-6" />
+                      <Rocket className="h-6 w-6" aria-hidden="true" />
                     </div>
                   </a>
                 </div>
@@ -359,13 +350,14 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
           </nav>
         </div>
 
-        <SideNav
-          id="sidebar"
-          class={`sidebar-transition h-content  overflow-y-auto bg-white  border-r border-gray-100 w-[22em] ml-16 ${showSideBarOnLoad ? 'block' : 'hidden'}`}
-        />
+        {
+          showNestedSideBar && (
+            <SideNav id="sidebar" class={`sidebar-transition h-content bg-white  border-r border-gray-100 w-[320px] ml-14`} />
+          )
+        }
       </aside>
       <main
-        class={`sidebar-transition w-full max-h-content overflow-y-auto ${showSideBarOnLoad ? 'ml-0' : 'ml-16'}`}
+        class={`sidebar-transition w-full max-h-content overflow-y-auto ${showNestedSideBar ? 'ml-0' : 'ml-14'}`}
         id="content"
       >
         <slot />
@@ -389,7 +381,8 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
     </div>
   </body>
 </html>
-<script define:vars={{ navigationItems, currentNavigationItem, showSideBarOnLoad, canPageBeEmbedded }}>
+<ClientRouter />
+<script define:vars={{ navigationItems, currentNavigationItem, canPageBeEmbedded }}>
   // Listen for Astro transititions
   document.addEventListener('astro:page-load', () => {
     document.dispatchEvent(new CustomEvent('contentLoaded'));
@@ -429,90 +422,22 @@ const canPageBeEmbedded = process.env.ENABLE_EMBED === 'true';
         if (element) element.style.display = 'none';
       });
 
-      content.classList.remove('ml-16');
+      content.classList.remove('ml-14');
       return;
     }
 
-    const sidebar = document.getElementById('sidebar');
-    const currentPath = window.location.href;
-
-    // Hide the sidebar if the current navigation item is not a sidebar item
-    if (!currentNavigationItem?.sidebar) {
-      sidebar.style.display = 'none';
-      content.style.width = '100%';
-      content.classList.add('ml-16');
-    } else {
-      sidebar.style.display = 'block';
-    }
-
     const navItems = document.querySelectorAll('[data-role="nav-item"]');
-    let isOpen = showSideBarOnLoad;
 
+    // Navigation items simply navigate to their href - no toggle logic
     navItems.forEach((item) => {
       item.addEventListener('click', (e) => {
-        const currentPath = window.location.href;
         const id = item.getAttribute('id');
-
         const navItem = navigationItems.find((navItem) => navItem.id === id);
 
-        if (!navItem.sidebar || !currentPath.includes(navItem.id) || currentPath.includes('/docs/custom')) {
+        if (navItem && navItem.href) {
           window.location.href = navItem.href;
-          return;
-        }
-
-        // not on the target page then just go to it.
-        if (!currentPath.includes(navItem.id)) return;
-
-        if (currentPath.includes(navItem.id)) {
-          e.preventDefault();
-          if (isOpen) {
-            hideSidebar();
-          } else {
-            showSidebar();
-          }
         }
       });
-    });
-
-    function showSidebar() {
-      if (!sidebar || !content) return;
-      isOpen = true;
-      localStorage.setItem('sidebarState', 'open');
-      sidebar.style.display = 'block';
-      setTimeout(() => {
-        sidebar.style.transform = 'translateX(0)';
-        content.style.transform = 'translateX(0)';
-        content.classList.remove('ml-16');
-        content.style.width = 'calc(100% - 240px)';
-      }, 10);
-    }
-
-    function hideSidebar() {
-      if (!sidebar || !content) return;
-      isOpen = false;
-      sidebar.style.transform = 'translateX(-100%)';
-      content.style.transform = 'translateX(0px)';
-      content.style.width = '100%';
-      content.classList.add('ml-16');
-    }
-
-    if (sidebar) {
-      sidebar.addEventListener('transitionend', () => {
-        if (!isOpen && sidebar && content) {
-          sidebar.style.display = 'none';
-          content.style.transform = 'translateX(0px)';
-        }
-      });
-    }
-
-    // Listen for custom sidebar toggle event from React components
-    window.addEventListener('sidebarToggle', (event) => {
-      const { action } = event.detail;
-      if (action === 'hide') {
-        hideSidebar();
-      } else if (action === 'show') {
-        showSidebar();
-      }
     });
   });
 </script>

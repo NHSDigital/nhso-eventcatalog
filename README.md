@@ -101,7 +101,7 @@ You can read more on [how it works on GitHub](https://github.com/event-catalog/e
 
 You should be able to get setup within minutes if you head over to our documentation to get started 👇
 
-➡️ [Get Started](https://www.eventcatalog.dev/docs/development/getting-started/installation)
+➡️ [Get Started](https://www.eventcatalog.dev/docs/development/getting-started)
 
 Or run this command to build a new catalog
 
@@ -122,6 +122,16 @@ You can see the markdown files that generated the website in the GitHub repo und
 Interested in collaborating with us? Our offerings include dedicated support, priority assistance, feature development, custom integrations, and more.
 
 Find more details on our [services page](https://eventcatalog.dev/services).
+
+# Looking for v2?
+
+You can find v2 on our [release/v2 branch](https://github.com/event-catalog/eventcatalog/tree/release/v2).
+
+We are currently working on `main` which is the current major version of EventCatalog.
+
+We are only applying patch fixes and security updates to `v2.x.x` going forward.
+
+If you would like to make a change to v2, please raise a pull request against the `release/v2` branch.
 
 # Looking for v1?
 
