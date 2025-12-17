@@ -344,7 +344,7 @@ const canPageBeEmbedded = isEmbedEnabled();
 
         {
           showNestedSideBar && (
-            <div>
+            <>
               <SideNav
                 id="sidebar"
                 class="sidebar-transition h-content bg-white border-r border-gray-100 ml-14"
@@ -353,9 +353,9 @@ const canPageBeEmbedded = isEmbedEnabled();
               <div
                 id="sidebar-resizer"
                 class="w-1 cursor-col-resize bg-transparent hover:bg-blue-200"
-                style="position: relative; z-index: 30;">
-              </div>
-            </div>
+                style="position: relative; z-index: 30;"
+              />
+            </>
           )
         }
       </aside>
