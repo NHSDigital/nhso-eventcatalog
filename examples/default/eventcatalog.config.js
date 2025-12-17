@@ -16,7 +16,7 @@ export default {
   // output: 'server',
   logo: {
     alt: 'FlowMart',
-    src: '/logo.png',
+    // src: '/logo.png',
     text: 'FlowMart',
   },
   base: '/',
@@ -32,11 +32,28 @@ export default {
   llmsTxt: {
     enabled: true,
   },
-  // chat: {
-  //   enabled: true,
-  //   provider: 'openai',
-  //   model: 'gpt-4.1',
-  // },
+  navigation: {
+    pages: [
+      {
+        type: 'group',
+        title: 'Core Domain',
+        icon: 'Boxes',
+        pages: [
+          'domain:E-Commerce',
+        ]
+      },
+      {
+        type: 'group',
+        title: 'Supporting Domains',
+        icon: 'Boxes',
+        pages: [
+          'domain:Payment',
+          'domain:Subscriptions',
+        ]
+      },
+      'list:all',
+    ]
+  },
   customDocs: {
     sidebar: [
       {

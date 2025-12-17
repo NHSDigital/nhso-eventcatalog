@@ -11,15 +11,17 @@
  * 3. Follow the official activation instructions
  */
 
-import config from '@config';
 import fs from 'fs';
 import { join } from 'path';
+import config from '../../eventcatalog.config.js';
 
 // These functions check for valid, legally obtained access to premium features
 export const isEventCatalogStarterEnabled = () => process.env.EVENTCATALOG_STARTER === 'true';
 export const isEventCatalogScaleEnabled = () => process.env.EVENTCATALOG_SCALE === 'true';
 
 export const isPrivateRemoteSchemaEnabled = () => isEventCatalogScaleEnabled() || isEventCatalogStarterEnabled();
+
+export const isEmbedEnabled = () => process.env.ENABLE_EMBED === 'true';
 
 export const showEventCatalogBranding = () => {
   const override = process.env.EVENTCATALOG_SHOW_BRANDING;
@@ -34,12 +36,15 @@ export const showCustomBranding = () => {
   return isEventCatalogStarterEnabled() || isEventCatalogScaleEnabled();
 };
 
-export const isChangelogEnabled = () => config?.changelog?.enabled ?? true;
+export const isChangelogEnabled = () => config?.changelog?.enabled ?? false;
 
 export const isCustomDocsEnabled = () => isEventCatalogStarterEnabled() || isEventCatalogScaleEnabled();
+
 export const isEventCatalogChatEnabled = () => {
   const isFeatureEnabledFromPlan = isEventCatalogStarterEnabled() || isEventCatalogScaleEnabled();
-  return isFeatureEnabledFromPlan && config?.chat?.enabled && isSSR();
+  const directory = process.env.PROJECT_DIR || process.cwd();
+  const hasChatConfigurationFile = fs.existsSync(join(directory, 'eventcatalog.chat.js'));
+  return isFeatureEnabledFromPlan && hasChatConfigurationFile && isSSR();
 };
 
 export const isEventCatalogUpgradeEnabled = () => !isEventCatalogStarterEnabled() && !isEventCatalogScaleEnabled();
@@ -49,11 +54,12 @@ export const isMarkdownDownloadEnabled = () => config?.llmsTxt?.enabled ?? false
 export const isLLMSTxtEnabled = () => (config?.llmsTxt?.enabled || isEventCatalogChatEnabled()) ?? false;
 
 export const isAuthEnabled = () => {
+  const isAuthEnabledInCatalog = config?.auth?.enabled ?? false;
   const directory = process.env.PROJECT_DIR || process.cwd();
-  const hasAuthConfig = fs.existsSync(join(directory, 'eventcatalog.auth.js'));
-  return (hasAuthConfig && isSSR() && isEventCatalogScaleEnabled()) || false;
+  const hasAuthConfigurationFile = fs.existsSync(join(directory, 'eventcatalog.auth.js'));
+  return (isAuthEnabledInCatalog && hasAuthConfigurationFile && isSSR() && isEventCatalogScaleEnabled()) || false;
 };
 
 export const isSSR = () => config?.output === 'server';
-
+export const isRSSEnabled = () => config?.rss?.enabled ?? false;
 export const isVisualiserEnabled = () => config?.visualiser?.enabled ?? true;

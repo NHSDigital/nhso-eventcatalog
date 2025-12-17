@@ -16,6 +16,7 @@ import { isOutputServer, getProjectOutDir, isAuthEnabled } from './features';
 import updateNotifier from 'update-notifier';
 import dotenv from 'dotenv';
 import { runMigrations } from './migrations';
+import { logger } from './utils/cli-logger';
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const program = new Command().version(VERSION);
 
@@ -71,64 +72,6 @@ const copyCore = () => {
   });
 };
 
-/**
- * EventCatalog has static and server output.
- *
- * Server output is used for things like EventCatalog Chat and using your own LLM through an API
- *
- * If this is the case, we need to copy the server files into the core directory
- * If static, no server files are needed or copied over
- */
-const copyServerFiles = async () => {
-  const isServerOutput = await isOutputServer();
-
-  // remove any server API if we have any
-  if (fs.existsSync(join(core, 'src/pages/api/server'))) {
-    fs.rmSync(join(core, 'src/pages/api/server'), { recursive: true });
-  }
-
-  if (!isServerOutput) {
-    // remove the chat API if it exists, this is only a SSR feature
-    // TODO: Make this more flexible and better in the future when we have more features like this.
-    if (fs.existsSync(join(core, 'src/pages/api/chat.ts'))) {
-      fs.rmSync(join(core, 'src/pages/api/chat.ts'));
-    }
-
-    // Auth requires SSR Mode
-    if (fs.existsSync(join(core, 'src/pages/api/[...auth].ts'))) {
-      fs.rmSync(join(core, 'src/pages/api/[...auth].ts'));
-    }
-
-    return;
-  }
-
-  // copy the server files into the core directory
-  fs.cpSync(join(eventCatalogDir, 'src/enterprise/eventcatalog-chat/pages/api'), join(core, 'src/pages/api'), {
-    recursive: true,
-  });
-};
-
-const createAuthFileIfNotExists = async (hasRequiredLicense: boolean) => {
-  const authEnabled = await isAuthEnabled();
-  const isSRR = await isOutputServer();
-
-  // If auth is enabled, then we need to create the auth API file
-  try {
-    if (authEnabled && hasRequiredLicense && isSRR) {
-      console.log('Creating auth file');
-      fs.writeFileSync(
-        join(core, 'src/pages/api/[...auth].ts'),
-        `import { AstroAuth } from 'auth-astro/server';
-export const prerender = false;
-export const { GET, POST } = AstroAuth();
-`
-      );
-    }
-  } catch (error) {
-    // silent for now
-  }
-};
-
 const clearCore = () => {
   if (fs.existsSync(core)) fs.rmSync(core, { recursive: true });
 };
@@ -137,6 +80,27 @@ const checkForUpdate = () => {
   const installedVersion = getInstalledEventCatalogVersion();
 
   if (!installedVersion) return;
+
+  // Check if user is on version < 3 and notify about V3
+  const majorVersion = parseInt(installedVersion.replace(/[^0-9.]/g, '').split('.')[0], 10);
+  if (majorVersion < 3) {
+    const v3Message = `🚀 EventCatalog V3 is now available in beta!
+
+You are currently on version ${installedVersion}.
+V3 brings exciting new features and improvements.
+
+Upgrade now: npm i @eventcatalog/core@beta`;
+    console.log(
+      boxen(v3Message, {
+        padding: 1,
+        margin: 1,
+        align: 'center',
+        borderColor: 'magenta',
+        borderStyle: 'round',
+      })
+    );
+    return;
+  }
 
   const pkg = { name: '@eventcatalog/core', version: installedVersion };
   const notifier = updateNotifier({ pkg, updateCheckInterval: 0 });
@@ -173,7 +137,12 @@ program
   .option('--force-recreate', 'Recreate the eventcatalog-core directory', false)
   .action(async (options, command: Command) => {
     // // Copy EventCatalog core over
-    console.log('Setting up EventCatalog....');
+    // // Copy EventCatalog core over
+    logger.welcome();
+    logger.info('Setting up EventCatalog...', 'eventcatalog');
+
+    const isServer = await isOutputServer();
+    logger.info(isServer ? 'EventCatalog is running in Server Mode' : 'EventCatalog is running in Static Mode', 'config');
 
     // Load any .env file in the project directory
     if (fs.existsSync(path.join(dir, '.env'))) {
@@ -181,9 +150,9 @@ program
     }
 
     if (options.debug) {
-      console.log('Debug mode enabled');
-      console.log('PROJECT_DIR', dir);
-      console.log('CATALOG_DIR', core);
+      logger.info('Debug mode enabled', 'debug');
+      logger.info(`PROJECT_DIR: ${dir}`, 'debug');
+      logger.info(`CATALOG_DIR: ${core}`, 'debug');
     }
 
     if (options.forceRecreate) clearCore();
@@ -200,9 +169,6 @@ program
     // Move files like public directory to the root of the eventcatalog-core directory
     await catalogToAstro(dir, core);
 
-    // Copy the server files into the core directory if we have server output
-    await copyServerFiles();
-
     // Check if backstage is enabled
     const canEmbedPages = await isFeatureEnabled(
       '@eventcatalog/backstage-plugin-eventcatalog',
@@ -210,9 +176,6 @@ program
     );
     const isEventCatalogStarter = await isEventCatalogStarterEnabled();
     const isEventCatalogScale = await isEventCatalogScaleEnabled();
-
-    // Create the auth.config.ts file if it doesn't exist
-    await createAuthFileIfNotExists(isEventCatalogScale);
 
     // is there an eventcatalog update to install?
     checkForUpdate();
@@ -257,7 +220,12 @@ program
   .command('build')
   .description('Run build of EventCatalog')
   .action(async (options, command: Command) => {
-    console.log('Building EventCatalog...');
+    logger.welcome();
+    logger.info('Building EventCatalog...', 'build');
+
+    const isServer = await isOutputServer();
+
+    logger.info(isServer ? 'EventCatalog is running in Server Mode' : 'EventCatalog is running in Static Mode', 'config');
 
     // Load any .env file in the project directory
     if (fs.existsSync(path.join(dir, '.env'))) {
@@ -265,20 +233,16 @@ program
     }
 
     copyCore();
-    // Copy the server files into the core directory if we have server output
-    await copyServerFiles();
 
     // Check if backstage is enabled
-    const canEmbedPages = await isFeatureEnabled(
+    const isBackstagePluginEnabled = await isFeatureEnabled(
       '@eventcatalog/backstage-plugin-eventcatalog',
       process.env.EVENTCATALOG_LICENSE_KEY_BACKSTAGE
     );
     const isEventCatalogStarter = await isEventCatalogStarterEnabled();
     const isEventCatalogScale = await isEventCatalogScaleEnabled();
-    const isServerOutput = await isOutputServer();
 
-    // Create the auth.config.ts file if it doesn't exist
-    await createAuthFileIfNotExists(isEventCatalogScale);
+    const canEmbedPages = isBackstagePluginEnabled || isEventCatalogScale;
 
     await logBuild(dir, {
       isEventCatalogStarterEnabled: isEventCatalogStarter,
@@ -312,29 +276,6 @@ program
         stdio: 'inherit',
       }
     );
-
-    // Not server rendered, then we need to index the site
-    if (!isServerOutput) {
-      const outDir = await getProjectOutDir();
-
-      const windowsCommand = `npx -y pagefind --site ${outDir}`;
-      const unixCommand = `npx -y pagefind --site ${outDir}`;
-      const pagefindCommand = process.platform === 'win32' ? windowsCommand : unixCommand;
-
-      // Build pagefind into the output directory for the final build version
-      execSync(
-        `cross-env PROJECT_DIR='${dir}' CATALOG_DIR='${core}' ENABLE_EMBED=${canEmbedPages} EVENTCATALOG_STARTER=${isEventCatalogStarter} EVENTCATALOG_SCALE=${isEventCatalogScale} ${pagefindCommand}`,
-        {
-          cwd: dir,
-          stdio: 'inherit',
-        }
-      );
-
-      // Copy the pagefind directory into the public directory for dev mode
-      if (fs.existsSync(join(dir, outDir, 'pagefind'))) {
-        fs.cpSync(join(dir, outDir, 'pagefind'), join(dir, 'public', 'pagefind'), { recursive: true });
-      }
-    }
   });
 
 const previewCatalog = ({
@@ -381,7 +322,8 @@ program
   .command('preview')
   .description('Serves the contents of your eventcatalog build directory')
   .action(async (options, command: Command) => {
-    console.log('Starting preview of your build...');
+    logger.welcome();
+    logger.info('Starting preview of your build...', 'preview');
 
     // Load any .env file in the project directory
     if (fs.existsSync(path.join(dir, '.env'))) {
@@ -395,11 +337,6 @@ program
     const isEventCatalogStarter = await isEventCatalogStarterEnabled();
     const isEventCatalogScale = await isEventCatalogScaleEnabled();
 
-    await copyServerFiles();
-
-    // Create the auth.config.ts file if it doesn't exist
-    await createAuthFileIfNotExists(isEventCatalogScale);
-
     previewCatalog({ command, canEmbedPages: canEmbedPages || isEventCatalogScale, isEventCatalogStarter, isEventCatalogScale });
   });
 
@@ -407,7 +344,8 @@ program
   .command('start')
   .description('Serves the contents of your eventcatalog build directory')
   .action(async (options, command: Command) => {
-    console.log('Starting preview of your build...');
+    logger.welcome();
+    logger.info('Starting preview of your build...', 'preview');
 
     // Load any .env file in the project directory
     if (fs.existsSync(path.join(dir, '.env'))) {

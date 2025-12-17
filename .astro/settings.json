@@ -1,5 +1,13 @@
 {
 	"_variables": {
+<<<<<<< HEAD
+<<<<<<< HEAD
 		"lastUpdateCheck": 1765300660767
+=======
+		"lastUpdateCheck": 1765539873455
+>>>>>>> de19451 (feat(core): simplified eventcatalog chat (#1919))
+=======
+		"lastUpdateCheck": 1765300660767
+>>>>>>> ef2759e (New FHIR Viewer)
 	}
 }
